@@ -1,0 +1,32 @@
+path: uploads/2496d105-41e8-4fa1-a96a-fe9d486cc200/data.csv
+
+df.info():
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 965 entries, 0 to 964
+Data columns (total 4 columns):
+ #   Column                Non-Null Count  Dtype         
+---  ------                --------------  -----         
+ 0   court_code            965 non-null    object        
+ 1   registration_year     965 non-null    int64         
+ 2   date_of_registration  965 non-null    datetime64[ns]
+ 3   decision_date         965 non-null    datetime64[ns]
+dtypes: datetime64[ns](2), int64(1), object(1)
+memory usage: 30.3+ KB
+
+Column names:
+["court_code", "registration_year", "date_of_registration", "decision_date"]
+
+First 5 rows (df.head()):
+  court_code  registration_year date_of_registration       decision_date
+0      33_10               2019  2019-12-13 02:43:10 2020-02-16 02:43:10
+1      33_10               2019  2019-03-26 03:31:18 2021-03-09 03:31:18
+2      33_10               2019  2019-09-02 21:31:28 2019-10-21 21:31:28
+3      33_10               2019  2019-04-22 01:50:57 2020-04-06 01:50:57
+4      33_10               2019  2019-03-20 01:05:24 2021-06-02 01:05:24
+
+ANSWER_FORMAT:
+{
+  "Which high court disposed the most cases from 2019 - 2022?": "...",
+  "What's the regression slope of the date_of_registration - decision_date by year in the court=33_10?": "...",
+  "Plot the year and # of days of delay from the above question as a scatterplot with a regression line. Encode as a base64 data URI under 100,000 characters": "data:image/webp:base64,..."
+}

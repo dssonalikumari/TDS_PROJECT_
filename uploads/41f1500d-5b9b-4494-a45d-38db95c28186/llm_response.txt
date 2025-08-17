@@ -1,0 +1,14 @@
+{
+    "code": "import pandas as pd\nimport requests\nimport os\nimport io\n\n# Define the output directory and ensure it exists\noutput_dir = \"uploads/41f1500d-5b9b-4494-a45d-38db95c28186\"\nos.makedirs(output_dir, exist_ok=True)\n\n# Define file paths for the data and metadata\ndata_path = os.path.join(output_dir, \"data.csv\")\nmetadata_path = os.path.join(output_dir, \"metadata.txt\")\n\n# URL of the Wikipedia page to scrape\nurl = \"https://en.wikipedia.org/wiki/List_of_highest-grossing_films\"\n\n# Fetch the HTML content of the page using a User-Agent to avoid blocking\nheaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}\nresponse = requests.get(url, headers=headers)\nresponse.raise_for_status()\n\n# Use pandas to read all tables from the HTML\n# The main table \"Highest-grossing films\" is the first one on this page\ntables = pd.read_html(io.StringIO(response.text))\ndf = tables[0]\n\n# Save the DataFrame to a CSV file\ndf.to_csv(data_path, index=False)\n\n# Generate the metadata file\nwith open(metadata_path, 'w', encoding='utf-8') as f:\n    f.write(f\"path: {data_path}\\n\")\n    f.write(\"description: A table of the highest-grossing films worldwide, scraped from the Wikipedia page 'List of highest-grossing films'.\\n\\n\")\n\n    # Output of df.info()\n    f.write(\"--- df.info() ---\\n\")\n    buffer = io.StringIO()\n    df.info(buf=buffer)\n    f.write(buffer.getvalue())\n    f.write(\"\\n\")\n\n    # Column names\n    f.write(\"--- Column Names ---\\n\")\n    f.write(f\"{df.columns.tolist()}\\n\\n\")\n\n    # First few rows (df.head())\n    f.write(\"--- df.head() ---\\n\")\n    f.write(f\"{df.head().to_string()}\\n\\n\")\n\n    # ANSWER_FORMAT block from the user's request\n    f.write(\"ANSWER_FORMAT:\\n\")\n    f.write(\"JSON array\")\n",
+    "libraries": [
+        "pandas",
+        "requests"
+    ],
+    "questions": [
+        "How many $2 bn movies before 2023?",
+        "Earliest film over $1.5 bn?",
+        "Correlation between Rank and Peak?",
+        "Scatterplot of Rank vs Peak with dotted red regression line as base64 PNG."
+    ],
+    "comment": "Step-3: Getting scrap code and metadata from llm. Tries count = %d 0"
+}

@@ -1,0 +1,14 @@
+{
+    "code": "import pandas as pd\nimport requests\nimport os\nimport io\n\n# Define the directory for saving files\noutput_dir = 'uploads/c14e0753-f1c1-41d2-926a-d504724ca6c1'\n\n# Create the directory if it does not exist\nos.makedirs(output_dir, exist_ok=True)\n\n# Define file paths\ndata_path = os.path.join(output_dir, 'data.csv')\nmetadata_path = os.path.join(output_dir, 'metadata.txt')\n\n# Scrape the data from the URL\nurl = 'https://en.wikipedia.org/wiki/List_of_highest-grossing_films'\ntry:\n    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})\n    response.raise_for_status()  # Raise an exception for bad status codes\n    # pandas.read_html returns a list of DataFrames\n    tables = pd.read_html(io.StringIO(response.text))\n    # The first table on the page is the one we need\n    df = tables[0]\n\n    # Save the dataframe to a CSV file\n    df.to_csv(data_path, index=False)\n\n    # Generate and save metadata\n    with open(metadata_path, 'w', encoding='utf-8') as f:\n        f.write(f'Path to data file: {data_path}\\n\\n')\n        \n        # Capture df.info() output\n        buffer = io.StringIO()\n        df.info(buf=buffer)\n        info_str = buffer.getvalue()\n        f.write('df.info():\\n')\n        f.write(info_str)\n        f.write('\\n')\n\n        # Write column names\n        f.write('Column names:\\n')\n        f.write(str(df.columns.tolist()))\n        f.write('\\n\\n')\n\n        # Write the first few rows\n        f.write('First few rows (df.head()):\\n')\n        f.write(df.head().to_string())\n        f.write('\\n\\n')\n\n        # Write the answer format\n        f.write('ANSWER_FORMAT:\\nJSON ARRAY')\n\nexcept requests.exceptions.RequestException as e:\n    print(f\"Error fetching URL: {e}\")\nexcept IndexError:\n    print(\"Could not find the expected table on the page.\")\nexcept Exception as e:\n    print(f\"An error occurred: {e}\")\n",
+    "libraries": [
+        "pandas",
+        "requests"
+    ],
+    "questions": [
+        "How many $2 bn movies before 2023?",
+        "Earliest film over $1.5 bn?",
+        "Correlation between Rank and Peak?",
+        "Scatterplot of Rank vs Peak with dotted red regression line as base64 PNG."
+    ],
+    "comment": "Step-3: Getting scrap code and metadata from llm. Tries count = %d 0"
+}

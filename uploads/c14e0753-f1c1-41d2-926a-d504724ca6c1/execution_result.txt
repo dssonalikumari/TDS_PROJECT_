@@ -1,0 +1,289 @@
+
+[2025-08-17 20:59:26]
+📜 Executing Code:
+import pandas as pd
+import requests
+import os
+import io
+
+# Define the directory for saving files
+output_dir = "uploads/c14e0753-f1c1-41d2-926a-d504724ca6c1"
+
+# Create the directory if it does not exist
+os.makedirs(output_dir, exist_ok=True)
+
+# Define file paths
+data_path = os.path.join(output_dir, "data.csv")
+metadata_path = os.path.join(output_dir, "metadata.txt")
+
+# Scrape the data from the URL
+url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
+try:
+    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+    response.raise_for_status()  # Raise an exception for bad status codes
+    # pandas.read_html returns a list of DataFrames
+    tables = pd.read_html(io.StringIO(response.text))
+    # The first table on the page is the one we need
+    df = tables[0]
+
+    # Save the dataframe to a CSV file
+    df.to_csv(data_path, index=False)
+
+    # Generate and save metadata
+    with open(metadata_path, "w", encoding="utf-8") as f:
+        f.write(f"Path to data file: {data_path}\n\n")
+
+        # Capture df.info() output
+        buffer = io.StringIO()
+        df.info(buf=buffer)
+        info_str = buffer.getvalue()
+        f.write("df.info():\n")
+        f.write(info_str)
+        f.write("\n")
+
+        # Write column names
+        f.write("Column names:\n")
+        f.write(str(df.columns.tolist()))
+        f.write("\n\n")
+
+        # Write the first few rows
+        f.write("First few rows (df.head()):\n")
+        f.write(df.head().to_string())
+        f.write("\n\n")
+
+        # Write the answer format
+        f.write("ANSWER_FORMAT:\nJSON ARRAY")
+
+except requests.exceptions.RequestException as e:
+    print(f"Error fetching URL: {e}")
+except IndexError:
+    print("Could not find the expected table on the page.")
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+----------------------------------------
+
+[2025-08-17 20:59:28]
+✅ Code executed successfully after installing libraries.
+----------------------------------------
+
+[2025-08-17 21:00:18]
+📜 Executing Code:
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import base64
+import io
+import json
+
+# --- 1. Load and Clean Data ---
+file_path = "uploads/c14e0753-f1c1-41d2-926a-d504724ca6c1/data.csv"
+df = pd.read_csv(file_path)
+
+# Clean 'Worldwide gross' column by removing non-numeric characters and converting to float
+df["Worldwide gross"] = (
+    df["Worldwide gross"]
+    .replace({r"\$": "", r",": "", r"T": ""}, regex=True)
+    .astype(float)
+)
+
+# Clean 'Peak' column, converting to numeric and coercing errors to NaN
+df["Peak"] = pd.to_numeric(df["Peak"], errors="coerce")
+
+# --- 2. Answer Questions ---
+
+# Q1: How many $2 bn movies before 2023?
+movies_over_2bn_before_2023 = df[
+    (df["Worldwide gross"] >= 2_000_000_000) & (df["Year"] < 2023)
+]
+q1_answer = len(movies_over_2bn_before_2023)
+
+# Q2: Earliest film over $1.5 bn?
+movies_over_1_5bn = df[df["Worldwide gross"] >= 1_500_000_000]
+# Find the index of the minimum year and retrieve the title
+earliest_film_title = movies_over_1_5bn.loc[movies_over_1_5bn["Year"].idxmin()]["Title"]
+q2_answer = earliest_film_title
+
+# Q3: Correlation between Rank and Peak?
+# Drop rows where 'Peak' is NaN for a valid correlation calculation
+df_corr = df.dropna(subset=["Rank", "Peak"])
+correlation = df_corr["Rank"].corr(df_corr["Peak"])
+q3_answer = correlation
+
+# Q4: Scatterplot of Rank vs Peak with dotted red regression line as base64 PNG.
+# Use the same cleaned dataframe as for correlation
+df_plot = df_corr
+x = df_plot["Rank"]
+y = df_plot["Peak"]
+
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.scatter(x, y, alpha=0.7, label="Data Points")
+ax.set_title("Rank vs. Peak with Regression Line")
+ax.set_xlabel("Rank")
+ax.set_ylabel("Peak")
+
+# Calculate and plot the linear regression line using numpy.polyfit
+if len(x) > 1:
+    m, b = np.polyfit(x, y, 1)  # m = slope, b = intercept
+    ax.plot(x, m * x + b, color="red", linestyle="--", label=f"Fit: y={m:.2f}x+{b:.2f}")
+
+ax.grid(True)
+ax.legend()
+plt.tight_layout()
+
+# Convert plot to a base64 encoded string
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+image_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+buf.close()
+plt.close(fig)
+q4_image = f"data:image/png;base64,{image_base64}"
+
+# --- 3. Format and Save Output ---
+# The requested format is a JSON array.
+# We will create an array of objects, where each object corresponds to a question and its answer.
+final_answers = [
+    {"question": "How many $2 bn movies before 2023?", "answer": q1_answer},
+    {"question": "Earliest film over $1.5 bn?", "answer": q2_answer},
+    {"question": "Correlation between Rank and Peak?", "answer": q3_answer},
+    {
+        "question": "Scatterplot of Rank vs Peak with dotted red regression line as base64 PNG.",
+        "image": q4_image,
+    },
+]
+
+# Save the result to the specified JSON file
+output_path = "uploads/c14e0753-f1c1-41d2-926a-d504724ca6c1/result.json"
+with open(output_path, "w") as f:
+    json.dump(final_answers, f, indent=4)
+
+----------------------------------------
+
+[2025-08-17 21:00:18]
+❌ Error during code execution:
+Traceback (most recent call last):
+  File "/home/dssonali24/Project_2/task_engine.py", line 48, in run_python_code
+    execute_code()
+  File "/home/dssonali24/Project_2/task_engine.py", line 26, in execute_code
+    exec(code, exec_globals)
+  File "<string>", line 13, in <module>
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/generic.py", line 6662, in astype
+    new_data = self._mgr.astype(dtype=dtype, copy=copy, errors=errors)
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/internals/managers.py", line 430, in astype
+    return self.apply(
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/internals/managers.py", line 363, in apply
+    applied = getattr(b, f)(**kwargs)
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/internals/blocks.py", line 784, in astype
+    new_values = astype_array_safe(values, dtype, copy=copy, errors=errors)
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/dtypes/astype.py", line 237, in astype_array_safe
+    new_values = astype_array(values, dtype, copy=copy)
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/dtypes/astype.py", line 182, in astype_array
+    values = _astype_nansafe(values, dtype, copy=copy)
+  File "/home/dssonali24/Project_2/venv/lib/python3.10/site-packages/pandas/core/dtypes/astype.py", line 133, in _astype_nansafe
+    return arr.astype(dtype, copy=True)
+ValueError: could not convert string to float: 'SM1922598800'
+
+----------------------------------------
+
+[2025-08-17 21:00:58]
+📜 Executing Code:
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import base64
+import io
+import json
+
+# --- 1. Load and Clean Data ---
+file_path = "uploads/c14e0753-f1c1-41d2-926a-d504724ca6c1/data.csv"
+df = pd.read_csv(file_path)
+
+# Corrected cleaning for 'Worldwide gross' column
+# Remove all non-numeric characters to handle various currency symbols and formats
+df["Worldwide gross"] = df["Worldwide gross"].replace(r"[^0-9]", "", regex=True)
+# Convert to a numeric type, coercing errors to NaN (Not a Number)
+df["Worldwide gross"] = pd.to_numeric(df["Worldwide gross"], errors="coerce")
+
+# Drop rows where 'Worldwide gross' could not be converted to a number
+df.dropna(subset=["Worldwide gross"], inplace=True)
+
+# Clean 'Peak' column, converting to numeric and coercing errors to NaN
+df["Peak"] = pd.to_numeric(df["Peak"], errors="coerce")
+
+# --- 2. Answer Questions ---
+
+# Q1: How many $2 bn movies before 2023?
+movies_over_2bn_before_2023 = df[
+    (df["Worldwide gross"] >= 2_000_000_000) & (df["Year"] < 2023)
+]
+q1_answer = len(movies_over_2bn_before_2023)
+
+# Q2: Earliest film over $1.5 bn?
+movies_over_1_5bn = df[df["Worldwide gross"] >= 1_500_000_000]
+if not movies_over_1_5bn.empty:
+    earliest_film_title = movies_over_1_5bn.loc[movies_over_1_5bn["Year"].idxmin()][
+        "Title"
+    ]
+else:
+    earliest_film_title = "No film found over $1.5 bn"
+q2_answer = earliest_film_title
+
+# Q3: Correlation between Rank and Peak?
+# Drop rows where 'Peak' is NaN for a valid correlation calculation
+df_corr = df.dropna(subset=["Rank", "Peak"])
+correlation = df_corr["Rank"].corr(df_corr["Peak"])
+q3_answer = correlation
+
+# Q4: Scatterplot of Rank vs Peak with dotted red regression line as base64 PNG.
+# Use the same cleaned dataframe as for correlation
+df_plot = df_corr
+x = df_plot["Rank"]
+y = df_plot["Peak"]
+
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.scatter(x, y, alpha=0.7, label="Data Points")
+ax.set_title("Rank vs. Peak with Regression Line")
+ax.set_xlabel("Rank")
+ax.set_ylabel("Peak")
+
+# Calculate and plot the linear regression line using numpy.polyfit
+if len(x) > 1:
+    m, b = np.polyfit(x, y, 1)  # m = slope, b = intercept
+    ax.plot(x, m * x + b, color="red", linestyle="--", label=f"Fit: y={m:.2f}x+{b:.2f}")
+
+ax.grid(True)
+ax.legend()
+plt.tight_layout()
+
+# Convert plot to a base64 encoded string
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+image_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+buf.close()
+plt.close(fig)
+q4_image = f"data:image/png;base64,{image_base64}"
+
+# --- 3. Format and Save Output ---
+# The requested format is a JSON array.
+final_answers = [
+    {"question": "How many $2 bn movies before 2023?", "answer": q1_answer},
+    {"question": "Earliest film over $1.5 bn?", "answer": q2_answer},
+    {"question": "Correlation between Rank and Peak?", "answer": q3_answer},
+    {
+        "question": "Scatterplot of Rank vs Peak with dotted red regression line as base64 PNG.",
+        "image": q4_image,
+    },
+]
+
+# Save the result to the specified JSON file
+output_path = "uploads/c14e0753-f1c1-41d2-926a-d504724ca6c1/result.json"
+with open(output_path, "w") as f:
+    json.dump(final_answers, f, indent=4)
+
+----------------------------------------
+
+[2025-08-17 21:00:58]
+✅ Code executed successfully after installing libraries.
+----------------------------------------
